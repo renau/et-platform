@@ -185,6 +185,7 @@ uint32_t System::read_dmctrl() const
 }
 
 
+#if EMU_ETSOC1
 uint32_t System::read_andortree2() const
 {
     static_assert(EMU_NUM_COMPUTE_SHIRES <= 48, "Wrong number of compute shires");
@@ -216,6 +217,7 @@ uint32_t System::read_andortree2() const
     // clear 'anyselected' to calculate the final value
     return value & 0x7ff;
 }
+#endif // EMU_ETSOC1
 
 
 uint16_t System::calculate_andortree0(unsigned neigh) const
@@ -247,6 +249,7 @@ uint16_t System::calculate_andortree0(unsigned neigh) const
 }
 
 
+#if EMU_ETSOC1
 uint16_t System::calculate_andortree1(unsigned shire) const
 {
     static_assert(EMU_NEIGH_PER_SHIRE == 4, "Wrong number of neighborhoods");
@@ -276,6 +279,7 @@ uint16_t System::calculate_andortree1(unsigned shire) const
 
     return value & 0x7ff;
 }
+#endif // EMU_ETSOC1
 
 
 #if EMU_HAS_SVCPROC

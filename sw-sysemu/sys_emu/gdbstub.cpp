@@ -213,13 +213,13 @@ static inline int to_target_thread(int thread_id)
 
 static inline int to_gdb_thread(int thread_id)
 {
+#if EMU_HAS_SVCPROC
     if (bemu::hartid_is_svcproc(thread_id) ||
         bemu::hartindex_is_svcproc(thread_id)) {
         return IO_SHIRE_SP_HARTID + 1;
     }
-    else {
-        return thread_id + 1;
-    }
+#endif
+    return thread_id + 1;
 }
 
 static inline unsigned target_num_threads()

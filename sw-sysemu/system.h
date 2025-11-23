@@ -78,7 +78,7 @@ struct Coop_tload_table {
 
 //==------------------------------------------------------------------------==//
 //
-// An ET-SoC-1 system
+// A generic Minion system
 //
 //==------------------------------------------------------------------------==//
 
@@ -93,6 +93,7 @@ public:
 
     enum class Stepping {
         unknown,
+        // ET-Soc-1 Steppings
         A0,
     };
 
@@ -302,7 +303,9 @@ private:
     // Minionshire debug module
     uint16_t selected_neigh_harts(unsigned neigh) const;
     uint16_t calculate_andortree0(unsigned neigh) const;
+#if EMU_ETSOC1
     uint16_t calculate_andortree1(unsigned shire) const;
+#endif
     bool should_halt_on_reset(const Hart& cpu) const;
 
     // Message ports

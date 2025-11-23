@@ -11,6 +11,39 @@
 
 namespace bemu {
 
+#ifdef ERBIUM
+#define EMU_ERBIUM 1
+#define EMU_ETSOC1 0
+#else
+#define EMU_ERBIUM 0
+#define EMU_ETSOC1 1
+#endif
+
+#if EMU_ERBIUM
+#define EMU_NUM_SHIRES		1
+#define EMU_NUM_MINION_SHIRES   (EMU_NUM_SHIRES)
+#define EMU_NUM_COMPUTE_SHIRES  (EMU_NUM_MINION_SHIRES)
+#define EMU_THREADS_PER_MINION	2
+#define EMU_MINIONS_PER_NEIGH	8
+#define EMU_THREADS_PER_NEIGH   (EMU_THREADS_PER_MINION * EMU_MINIONS_PER_NEIGH)
+#define EMU_NEIGH_PER_SHIRE	1
+#define EMU_MINIONS_PER_SHIRE   (EMU_MINIONS_PER_NEIGH * EMU_NEIGH_PER_SHIRE)
+#define EMU_THREADS_PER_SHIRE   (EMU_THREADS_PER_NEIGH * EMU_NEIGH_PER_SHIRE)
+#define EMU_NUM_NEIGHS          (EMU_NUM_MINION_SHIRES * EMU_NEIGH_PER_SHIRE)
+#define EMU_NUM_MINIONS         (EMU_NUM_MINION_SHIRES * EMU_MINIONS_PER_SHIRE)
+#define EMU_NUM_THREADS         (EMU_NUM_MINION_SHIRES * EMU_THREADS_PER_SHIRE)
+
+#define EMU_HAS_L2 0
+#define EMU_HAS_SVCPROC 0
+#define EMU_HAS_MEMSHIRE 0
+#define EMU_HAS_SPIO 0
+#define EMU_HAS_PU 0
+
+// Main memory size (16Mb of MRAM)
+#define EMU_DRAM_SIZE  (16ULL*1024ULL*1024ULL)
+
+#elif EMU_ETSOC1
+
 // Maximum number of threads
 #define EMU_NUM_SHIRES          35
 #define EMU_NUM_MINION_SHIRES   (EMU_NUM_SHIRES - 1)
@@ -79,6 +112,10 @@ namespace bemu {
 // Main memory size (up to 32GiB)
 //
 #define EMU_DRAM_SIZE  (32ULL*1024ULL*1024ULL*1024ULL)
+
+#else
+#error "Architecture unspecified."
+#endif
 
 // Message ports
 #define NR_MSG_PORTS         4

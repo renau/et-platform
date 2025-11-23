@@ -582,8 +582,10 @@ uint64_t System::esr_read(const Agent& agent, uint64_t addr)
             return shire_other_esrs[shire].clk_gate_ctrl;
         case ESR_SHIRE_CHANNEL_ECO_CTL:
             return shire_other_esrs[shire].shire_channel_eco_ctl;
+#if EMU_ETSOC1
         case ESR_AND_OR_TREE_L1:
             return calculate_andortree1(shire);
+#endif
         }
         WARN_AGENT(esrs, agent, "Read unknown shire_other ESR S%u:0x%" PRIx64, shireid(shire), esr);
         throw memory_error(addr);
