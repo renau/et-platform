@@ -18,7 +18,7 @@ USE_STDLIB     ?= 0
 COMPILE_OPT    ?= -O2
 EXTRA_CFLAGS   ?=
 # Extra paths/sources
-RISCV          ?=
+RISCV          ?= /opt/et/bin
 BUILD_DIR      ?= ../build/examples
 BOOT_SRC       ?= common/boot.S
 CRT_SRC        ?= common/crt.S
@@ -31,10 +31,10 @@ VERBOSE_0 = @
 ECHO = $(VERBOSE_$(VERBOSE))
 
 # RISC-V Executables
-AS  = riscv64-unknown-elf-as
-CC  = riscv64-unknown-elf-gcc
-CXX = riscv64-unknown-elf-g++
-OD  = riscv64-unknown-elf-objdump
+AS  = $(RISCV)/riscv64-unknown-elf-as
+CC  = $(RISCV)/riscv64-unknown-elf-gcc
+CXX = $(RISCV)/riscv64-unknown-elf-g++
+OD  = $(RISCV)/riscv64-unknown-elf-objdump
 
 CFLAGS_STDLIB_0 = -nostdlib
 CXXFLAGS_RTTI_0 = -fno-rtti
@@ -59,9 +59,7 @@ CFLAGS += -Wall \
 	     -mcmodel=medany \
 	     -march=$(MINION_MARCH) \
 	     -mabi=$(MINION_MABI) \
-	     -Wa,-march=$(MINION_MARCH),-mabi=$(MINION_MABI) \
-	     -mno-riscv-attribute \
-	     -Wa,-mno-arch-attr
+	     -Wa,-march=$(MINION_MARCH),-mabi=$(MINION_MABI)
 
 CFLAGS += $(CFLAGS_STDLIB_$(USE_STDLIB))
 
