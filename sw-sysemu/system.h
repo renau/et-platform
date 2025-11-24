@@ -143,11 +143,6 @@ public:
     bool has_sleeping_harts() const;
     bool has_available_harts() const;
 
-    // Interrupts
-    void pu_plic_interrupt_pending_set(uint32_t source_id);
-    void pu_plic_interrupt_pending_clear(uint32_t source_id);
-    void sp_plic_interrupt_pending_set(uint32_t source_id);
-    void sp_plic_interrupt_pending_clear(uint32_t source_id);
     void raise_machine_timer_interrupt(unsigned shire);
     void clear_machine_timer_interrupt(unsigned shire);
     void raise_machine_external_interrupt(unsigned shire);
@@ -164,30 +159,45 @@ public:
     void copy_memory_from_device_to_host(uint64_t from_addr, uint64_t to_addr, uint32_t size);
     void notify_iatu_ctrl_2_reg_write(int pcie_id, uint32_t iatu, uint32_t value);
 
+    //
+    // Peripherals/devices
+    //
+
+    void tick_peripherals(uint64_t cycle);
+    bool timers_active(void);
+
+#if EMU_HAS_SVCPROC
+    // Interrupts
+    void sp_plic_interrupt_pending_set(uint32_t source_id);
+    void sp_plic_interrupt_pending_clear(uint32_t source_id);
+#endif
+
+#if EMU_HAS_PU
+    // Interrupts
+    void pu_plic_interrupt_pending_set(uint32_t source_id);
+    void pu_plic_interrupt_pending_clear(uint32_t source_id);
     // UARTs
     void pu_uart0_set_rx_fd(int fd);
     void pu_uart1_set_rx_fd(int fd);
     int pu_uart0_get_rx_fd() const;
     int pu_uart1_get_rx_fd() const;
-    void spio_uart0_set_rx_fd(int fd);
-    void spio_uart1_set_rx_fd(int fd);
-    int spio_uart0_get_rx_fd() const;
-    int spio_uart1_get_rx_fd() const;
     void pu_uart0_set_tx_fd(int fd);
     void pu_uart1_set_tx_fd(int fd);
     int pu_uart0_get_tx_fd() const;
     int pu_uart1_get_tx_fd() const;
+#endif // EMU_HAS_PU
+
+#if EMU_HAS_SPIO
+    // UARTs
+    void spio_uart0_set_rx_fd(int fd);
+    void spio_uart1_set_rx_fd(int fd);
+    int spio_uart0_get_rx_fd() const;
+    int spio_uart1_get_rx_fd() const;
     void spio_uart0_set_tx_fd(int fd);
     void spio_uart1_set_tx_fd(int fd);
     int spio_uart0_get_tx_fd() const;
     int spio_uart1_get_tx_fd() const;
-
-    // Peripherals/devices
-    void tick_peripherals(uint64_t cycle);
-
-    // Timers
-    bool pu_rvtimer_is_active() const;
-    bool spio_rvtimer_is_active() const;
+#endif // EMU_HAS_SPIO
 
     // System registers
     uint64_t esr_read(const Agent& agent, uint64_t addr);
@@ -429,12 +439,6 @@ inline int System::pu_uart1_get_tx_fd() const
 {
     return memory.pu_uart1_get_tx_fd();
 }
-
-inline bool System::pu_rvtimer_is_active() const
-{
-    return memory.pu_rvtimer_is_active();
-}
-
 #endif // EMU_HAS_PU
 
 #if EMU_HAS_SVCPROC
@@ -500,12 +504,6 @@ inline int System::spio_uart1_get_tx_fd() const
     return memory.spio_uart1_get_tx_fd();
 }
 
-
-inline bool System::spio_rvtimer_is_active() const
-{
-    return memory.spio_rvtimer_is_active();
-}
-
 #endif // EMU_HAS_SPIO
 
 
@@ -529,6 +527,19 @@ inline void System::tick_peripherals(uint64_t cycle)
 #endif
 
     }
+}
+
+inline bool System::timers_active(void)
+{
+#if EMU_HAS_SPIO
+    if (memory.spio_rvtimer_is_active())
+        return true;
+#endif
+#if EMU_HAS_PU
+    if (memory.pu_rvtimer_is_active())
+        return true;
+#endif
+    return false;
 }
 
 

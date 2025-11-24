@@ -308,6 +308,7 @@ sys_emu::sys_emu(const sys_emu_cmd_options &cmd_options, api_communicate *api_co
                           reinterpret_cast<bemu::MainMemory::const_pointer>(&info.value));
     }
 
+#if EMU_HAS_PU
     // Setup PU UART0 RX stream
     if (!cmd_options.pu_uart0_rx_file.empty()) {
         int fd = open(cmd_options.pu_uart0_rx_file.c_str(), O_RDONLY, 0666);
@@ -328,28 +329,6 @@ sys_emu::sys_emu(const sys_emu_cmd_options &cmd_options, api_communicate *api_co
         chip.pu_uart1_set_rx_fd(fd);
     } else {
         chip.pu_uart1_set_rx_fd(STDIN_FILENO);
-    }
-
-    // Setup SPIO UART0 RX stream
-    if (!cmd_options.spio_uart0_rx_file.empty()) {
-        int fd = open(cmd_options.spio_uart0_rx_file.c_str(), O_RDONLY | O_NONBLOCK | O_CREAT | O_TRUNC, 0666);
-        if (fd < 0) {
-            LOG_AGENT(FTL, agent, "Error opening \"%s\"", cmd_options.spio_uart0_rx_file.c_str());
-        }
-        chip.spio_uart0_set_rx_fd(fd);
-    } else {
-        chip.spio_uart0_set_rx_fd(STDIN_FILENO);
-    }
-
-    // Setup SPIO UART1 RX stream
-    if (!cmd_options.spio_uart1_rx_file.empty()) {
-        int fd = open(cmd_options.spio_uart1_rx_file.c_str(), O_RDONLY | O_NONBLOCK | O_CREAT | O_TRUNC, 0666);
-        if (fd < 0) {
-            LOG_AGENT(FTL, agent, "Error opening \"%s\"", cmd_options.spio_uart1_rx_file.c_str());
-        }
-        chip.spio_uart1_set_rx_fd(fd);
-    } else {
-        chip.spio_uart1_set_rx_fd(STDIN_FILENO);
     }
 
     // Setup PU UART0 TX stream
@@ -373,6 +352,30 @@ sys_emu::sys_emu(const sys_emu_cmd_options &cmd_options, api_communicate *api_co
     } else {
         chip.pu_uart1_set_tx_fd(STDOUT_FILENO);
     }
+#endif // EMU_HAS_PU
+
+#if EMU_HAS_SPIO
+    // Setup SPIO UART0 RX stream
+    if (!cmd_options.spio_uart0_rx_file.empty()) {
+        int fd = open(cmd_options.spio_uart0_rx_file.c_str(), O_RDONLY | O_NONBLOCK | O_CREAT | O_TRUNC, 0666);
+        if (fd < 0) {
+            LOG_AGENT(FTL, agent, "Error opening \"%s\"", cmd_options.spio_uart0_rx_file.c_str());
+        }
+        chip.spio_uart0_set_rx_fd(fd);
+    } else {
+        chip.spio_uart0_set_rx_fd(STDIN_FILENO);
+    }
+
+    // Setup SPIO UART1 RX stream
+    if (!cmd_options.spio_uart1_rx_file.empty()) {
+        int fd = open(cmd_options.spio_uart1_rx_file.c_str(), O_RDONLY | O_NONBLOCK | O_CREAT | O_TRUNC, 0666);
+        if (fd < 0) {
+            LOG_AGENT(FTL, agent, "Error opening \"%s\"", cmd_options.spio_uart1_rx_file.c_str());
+        }
+        chip.spio_uart1_set_rx_fd(fd);
+    } else {
+        chip.spio_uart1_set_rx_fd(STDIN_FILENO);
+    }
 
     // Setup SPIO UART0 TX stream
     if (!cmd_options.spio_uart0_tx_file.empty()) {
@@ -395,6 +398,7 @@ sys_emu::sys_emu(const sys_emu_cmd_options &cmd_options, api_communicate *api_co
     } else {
         chip.spio_uart1_set_tx_fd(STDOUT_FILENO);
     }
+#endif // EMU_HAS_SPIO
 
     // Initialize Simulator API
     if (api_listener) {
@@ -483,8 +487,7 @@ int sys_emu::main_internal() {
            && (chip.has_active_harts()
                || (chip.has_sleeping_harts()
                    && ((api_listener != nullptr)
-                       || chip.pu_rvtimer_is_active()
-                       || chip.spio_rvtimer_is_active()))))
+                       || chip.timers_active()))))
     {
         if (gdb_enabled) {
             switch (gdbstub_get_status()) {
@@ -781,17 +784,12 @@ int sys_emu::main_internal() {
                         cmd_options.dump_mem.c_str(), chip.memory.first(),
                         (chip.memory.last() - chip.memory.first()) + 1);
     }
+#if EMU_HAS_PU
     if (!cmd_options.pu_uart0_rx_file.empty()) {
         close(chip.pu_uart0_get_rx_fd());
     }
     if (!cmd_options.pu_uart1_rx_file.empty()) {
         close(chip.pu_uart1_get_rx_fd());
-    }
-    if (!cmd_options.spio_uart0_rx_file.empty()) {
-        close(chip.spio_uart0_get_rx_fd());
-    }
-    if (!cmd_options.spio_uart1_rx_file.empty()) {
-        close(chip.spio_uart1_get_rx_fd());
     }
     if (!cmd_options.pu_uart0_tx_file.empty()) {
         close(chip.pu_uart0_get_tx_fd());
@@ -799,12 +797,22 @@ int sys_emu::main_internal() {
     if (!cmd_options.pu_uart1_tx_file.empty()) {
         close(chip.pu_uart1_get_tx_fd());
     }
+#endif // EMU_HAS_PU
+
+#if EMU_HAS_SPIO
+    if (!cmd_options.spio_uart0_rx_file.empty()) {
+        close(chip.spio_uart0_get_rx_fd());
+    }
+    if (!cmd_options.spio_uart1_rx_file.empty()) {
+        close(chip.spio_uart1_get_rx_fd());
+    }
     if (!cmd_options.spio_uart0_tx_file.empty()) {
         close(chip.spio_uart0_get_tx_fd());
     }
     if (!cmd_options.spio_uart1_tx_file.empty()) {
         close(chip.spio_uart1_get_tx_fd());
     }
+#endif // EMU_HAS_SPIO
 #ifdef SYSEMU_PROFILING
     if (!cmd_options.dump_prof_file.empty()) {
         profiling_flush();
