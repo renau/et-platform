@@ -78,7 +78,7 @@ struct Coop_tload_table {
 
 //==------------------------------------------------------------------------==//
 //
-// An ET-SoC-1 system
+// A generic Minion system
 //
 //==------------------------------------------------------------------------==//
 
@@ -93,6 +93,7 @@ public:
 
     enum class Stepping {
         unknown,
+        // ET-Soc-1 Steppings
         A0,
     };
 
@@ -123,8 +124,12 @@ public:
     void end_warm_reset(unsigned shire);
     void cold_reset(unsigned shire);
     void cold_reset_mindm();
+#if EMU_HAS_SVCPROC
     void cold_reset_spdm();
+#endif
+#if EMU_HAS_MEMSHIRE
     void cold_reset_memshire();
+#endif
 
     uint64_t get_csr(unsigned thread, uint16_t cnum);
     void set_csr(unsigned thread, uint16_t cnum, uint64_t data);
@@ -207,11 +212,13 @@ public:
     uint32_t read_dmctrl() const;
     uint32_t read_andortree2() const;
 
+#if EMU_HAS_SVCPROC
     // Service processor debug module
     void write_spdmctrl(uint32_t value);
     void write_sphastatus(uint32_t value);
     uint32_t read_spdmctrl() const;
     uint32_t read_sphastatus() const;
+#endif
 
     // Message ports
     void set_msg_funcs(msg_func_t fn);
@@ -267,7 +274,9 @@ public:
     std::array<shire_cache_esrs_t, EMU_NUM_SHIRES>  shire_cache_esrs {};
     std::array<shire_other_esrs_t, EMU_NUM_SHIRES>  shire_other_esrs {};
     std::array<broadcast_esrs_t, EMU_NUM_SHIRES>    broadcast_esrs {};
+#if EMU_HAS_MEMSHIRE
     mem_shire_esrs_t    mem_shire_esrs;
+#endif
 
     // Logging
     testLog     log {"EMU", LOG_INFO}; // Consider making this a "plugin"
@@ -294,7 +303,9 @@ private:
     // Minionshire debug module
     uint16_t selected_neigh_harts(unsigned neigh) const;
     uint16_t calculate_andortree0(unsigned neigh) const;
+#if EMU_ETSOC1
     uint16_t calculate_andortree1(unsigned shire) const;
+#endif
     bool should_halt_on_reset(const Hart& cpu) const;
 
     // Message ports
@@ -309,9 +320,11 @@ private:
     // Minionshire debug module
     uint32_t dmctrl;
 
+#if EMU_HAS_SVCPROC
     // Service processor debug module
     uint32_t spdmctrl;
     uint8_t  sphastatus;
+#endif
 
     // Message ports
     bool msg_port_delayed_write {false};
@@ -359,7 +372,7 @@ inline bool System::has_available_harts() const
     return has_active_harts() || has_sleeping_harts();
 }
 
-
+#if EMU_HAS_PU
 inline void System::pu_plic_interrupt_pending_set(uint32_t source_id)
 {
     memory.pu_plic_interrupt_pending_set(noagent, source_id);
@@ -369,18 +382,6 @@ inline void System::pu_plic_interrupt_pending_set(uint32_t source_id)
 inline void System::pu_plic_interrupt_pending_clear(uint32_t source_id)
 {
     memory.pu_plic_interrupt_pending_clear(noagent, source_id);
-}
-
-
-inline void System::sp_plic_interrupt_pending_set(uint32_t source_id)
-{
-    memory.sp_plic_interrupt_pending_set(noagent, source_id);
-}
-
-
-inline void System::sp_plic_interrupt_pending_clear(uint32_t source_id)
-{
-    memory.sp_plic_interrupt_pending_clear(noagent, source_id);
 }
 
 inline void System::pu_uart0_set_rx_fd(int fd)
@@ -406,31 +407,6 @@ inline int System::pu_uart1_get_rx_fd() const
     return memory.pu_uart1_get_rx_fd();
 }
 
-
-inline void System::spio_uart0_set_rx_fd(int fd)
-{
-    memory.spio_uart0_set_rx_fd(fd);
-}
-
-
-inline void System::spio_uart1_set_rx_fd(int fd)
-{
-    memory.spio_uart1_set_rx_fd(fd);
-}
-
-
-inline int System::spio_uart0_get_rx_fd() const
-{
-    return memory.spio_uart0_get_rx_fd();
-}
-
-
-inline int System::spio_uart1_get_rx_fd() const
-{
-    return memory.spio_uart1_get_rx_fd();
-}
-
-
 inline void System::pu_uart0_set_tx_fd(int fd)
 {
     memory.pu_uart0_set_tx_fd(fd);
@@ -454,6 +430,52 @@ inline int System::pu_uart1_get_tx_fd() const
     return memory.pu_uart1_get_tx_fd();
 }
 
+inline bool System::pu_rvtimer_is_active() const
+{
+    return memory.pu_rvtimer_is_active();
+}
+
+#endif // EMU_HAS_PU
+
+#if EMU_HAS_SVCPROC
+
+inline void System::sp_plic_interrupt_pending_set(uint32_t source_id)
+{
+    memory.sp_plic_interrupt_pending_set(noagent, source_id);
+}
+
+
+inline void System::sp_plic_interrupt_pending_clear(uint32_t source_id)
+{
+    memory.sp_plic_interrupt_pending_clear(noagent, source_id);
+}
+
+#endif // EMU_HAS_SVCPROC
+
+#if EMU_HAS_SPIO
+
+inline void System::spio_uart0_set_rx_fd(int fd)
+{
+    memory.spio_uart0_set_rx_fd(fd);
+}
+
+
+inline void System::spio_uart1_set_rx_fd(int fd)
+{
+    memory.spio_uart1_set_rx_fd(fd);
+}
+
+
+inline int System::spio_uart0_get_rx_fd() const
+{
+    return memory.spio_uart0_get_rx_fd();
+}
+
+
+inline int System::spio_uart1_get_rx_fd() const
+{
+    return memory.spio_uart1_get_rx_fd();
+}
 
 inline void System::spio_uart0_set_tx_fd(int fd)
 {
@@ -479,26 +501,33 @@ inline int System::spio_uart1_get_tx_fd() const
 }
 
 
-inline bool System::pu_rvtimer_is_active() const
-{
-    return memory.pu_rvtimer_is_active();
-}
-
-
 inline bool System::spio_rvtimer_is_active() const
 {
     return memory.spio_rvtimer_is_active();
 }
+
+#endif // EMU_HAS_SPIO
 
 
 inline void System::tick_peripherals(uint64_t cycle)
 {
     // cycle at 1GHz, timer clock at 10MHz
     if ((cycle % 100) == 0) {
+
+#if EMU_HAS_PU
         memory.pu_rvtimer_clock_tick(noagent);
+#endif
+#if EMU_HAS_SPIO
         memory.spio_rvtimer_clock_tick(noagent);
+#endif
+
+#if EMU_HAS_PU
         memory.pu_apb_timers_clock_tick(*this);
+#endif
+#if EMU_HAS_SPIO
         memory.spio_apb_timers_clock_tick(*this);
+#endif
+
     }
 }
 

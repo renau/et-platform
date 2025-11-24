@@ -211,6 +211,7 @@ static inline uint64_t truncated_dram_addr(const Hart& cpu, uint64_t addr)
 // Convert between the two Minion L2SCP views to the NoC view
 static inline uint64_t normalize_scratchpad_address(const Hart& cpu, uint64_t addr)
 {
+#if EMU_HAS_L2
     // Convert between format 0 and format 1 to internal format
     addr -= L2_SCP_BASE;
     if (addr >= 1_GiB) {
@@ -224,12 +225,16 @@ static inline uint64_t normalize_scratchpad_address(const Hart& cpu, uint64_t ad
     // Replace local shire with proper shire number
     if ((addr & (255ull << 23)) == (255ull << 23)) {
         uint64_t shire = cpu.shireid();
-        if (shire == IO_SHIRE_ID) {
+        if (shireid_is_ioshire(shire)) {
             throw memory_error(addr);
         }
         addr = (addr & ~(255ull << 23)) | (shire << 23);
     }
     return addr;
+#else
+    (void)cpu;
+    return addr;
+#endif
 }
 
 
@@ -258,7 +263,7 @@ static uint64_t pma_check_data_access(const Hart& cpu, uint64_t vaddr,
     (void) cop;
     (void) mask;
 #endif
-    bool spio     = (cpu.mhartid == IO_SHIRE_SP_HARTID);
+    bool spio     = hartid_is_svcproc(cpu.mhartid);
     bool amo      = (macc == Mem_Access_AtomicL) || (macc == Mem_Access_AtomicG);
     bool amo_l    = (macc == Mem_Access_AtomicL);
     bool ts_tl_co = (macc >= Mem_Access_TxLoad) && (macc <= Mem_Access_CacheOp);
@@ -436,7 +441,7 @@ static uint64_t pma_check_fetch_access(const Hart& cpu, uint64_t vaddr,
                                        uint64_t addr, size_t size)
 {
     (void) size;
-    bool spio = (cpu.mhartid == IO_SHIRE_SP_HARTID);
+    bool spio = hartid_is_svcproc(cpu.mhartid);
 
     if (paddr_is_dram(addr)) {
         if (spio || paddr_is_dram_uncacheable(addr))
@@ -526,7 +531,7 @@ static uint64_t pma_check_fetch_access(const Hart& cpu, uint64_t vaddr,
 static uint64_t pma_check_ptw_access(const Hart& cpu, uint64_t vaddr,
                                      uint64_t addr, mem_access_type macc)
 {
-    bool spio = (cpu.mhartid == IO_SHIRE_SP_HARTID);
+    bool spio = hartid_is_svcproc(cpu.mhartid);
 
     if (paddr_is_dram(addr)) {
         uint8_t mprot = cpu.chip->neigh_esrs[neigh_index(cpu)].mprot;
