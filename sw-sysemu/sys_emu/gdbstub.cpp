@@ -133,17 +133,17 @@ static void hextostr(char* str, const char* hex)
 
 static inline void u32_to_hexstr(char* str, uint32_t value)
 {
-    sprintf(str, "%08" PRIx32, bswap32(value));
+    snprintf(str, 9, "%08" PRIx32, bswap32(value));
 }
 
 static inline void u64_to_hexstr(char* str, uint64_t value)
 {
-    sprintf(str, "%016" PRIx64, bswap64(value));
+    snprintf(str, 17, "%016" PRIx64, bswap64(value));
 }
 
 static inline void u64_to_hexstr_raw(char* str, uint64_t value)
 {
-    sprintf(str, "%016" PRIx64, value);
+    snprintf(str, 17, "%016" PRIx64, value);
 }
 
 static inline void freg_to_hexstr(char* str, bemu::freg_t freg)
@@ -214,8 +214,7 @@ static inline int to_target_thread(int thread_id)
 static inline int to_gdb_thread(int thread_id)
 {
 #if EMU_HAS_SVCPROC
-    if (bemu::hartid_is_svcproc(thread_id) ||
-        bemu::hartindex_is_svcproc(thread_id)) {
+    if (bemu::hartid_is_svcproc(thread_id) || bemu::hartindex_is_svcproc(thread_id)) {
         return IO_SHIRE_SP_HARTID + 1;
     }
 #endif
@@ -325,7 +324,7 @@ static void target_continue(int thread)
 
 static void target_run(int thread, uint64_t start_pc, uint64_t end_pc)
 {
-    LOG_GDBSTUB(DEBUG, "run thread %d from 0x%010lx to 0x%010lx", thread, start_pc, end_pc);
+    LOG_GDBSTUB(DEBUG, "run thread %d from 0x%010" PRIx64 " to 0x%010" PRIx64, thread, start_pc, end_pc);
     g_sys_emu->thread_set_single_step(to_target_thread(thread), start_pc, end_pc);
     g_sys_emu->thread_set_running(to_target_thread(thread));
 }
@@ -680,10 +679,10 @@ static void gdbstub_handle_qgettlsaddr(char* packet)
 
     char* tokens[2];
     char* tokens2[3];
-    char tmp[16+1];
+    char  tmp[16 + 1];
 
-    tmp[0] = '\0';
-    int ntokens = strsplit(packet, ":", tokens, ARRAY_SIZE(tokens));
+    tmp[0]       = '\0';
+    int ntokens  = strsplit(packet, ":", tokens, ARRAY_SIZE(tokens));
     int ntokens2 = strsplit(tokens[1], ",", tokens2, ARRAY_SIZE(tokens2));
 
     if ((ntokens < 2) || (ntokens2 < 3)) {
@@ -691,12 +690,12 @@ static void gdbstub_handle_qgettlsaddr(char* packet)
         return;
     }
 
-    //lm parameter is not taken in consideration
+    // lm parameter is not taken in consideration
 
-    int thread_id = strtol(tokens2[0], NULL, 16);
-    uint64_t tp = target_read_register(thread_id, TP_REG);
+    int      thread_id = strtol(tokens2[0], NULL, 16);
+    uint64_t tp        = target_read_register(thread_id, TP_REG);
 
-    //point to local thread variable under consideration
+    // point to local thread variable under consideration
     int offset_thread_var = strtol(tokens2[1], NULL, 16);
     u64_to_hexstr_raw(tmp, (tp + offset_thread_var));
 
